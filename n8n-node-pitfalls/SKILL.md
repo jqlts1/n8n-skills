@@ -1,197 +1,197 @@
 ---
 name: n8n-node-pitfalls
 description: |
-  n8n 节点易错点和注意事项速查。当遇到以下情况时使用：
-  - 使用 Merge、Loop Over Items、IF、Switch 等流程控制节点
-  - 并行分支合并时出现问题
-  - 节点输出不符合预期
-  - 需要了解某个节点的常见陷阱
+  Quick reference for common mistakes and pitfalls in n8n nodes. Use when:
+  - Working with Merge, Loop Over Items, IF, Switch, or other flow control nodes
+  - Parallel branches are not merging correctly
+  - Node output is not what you expected
+  - You need to know the common traps for a specific node
 ---
 
-# n8n 节点易错点速查
+# n8n Node Pitfalls
 
-常见节点的使用陷阱和正确做法。
-
----
-
-## Merge 合并节点
-
-### 核心问题
-> ⚠️ **Number of Inputs 默认只有 2！** 合并超过 2 个分支必须手动调整。
-
-### 参数说明
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| Mode | Append | 合并方式，Append 最常用 |
-| Number of Inputs | 2 | **必须与实际分支数一致** |
-
-### 常见错误
-
-```
-❌ 5 个分支连到 Merge，但 Number of Inputs = 2
-   → 只有 2 个输入端口，其他 3 个无法连接
-
-❌ 不用 Merge，直接把多个节点连到同一个目标节点
-   → 每个源节点完成后单独触发目标节点
-   → 目标节点被执行多次，而不是等待所有输入
-
-✅ 正确做法：
-   1. 添加 Merge 节点
-   2. Settings → Number of Inputs = 实际分支数
-   3. 各分支连接到 Merge 的不同输入端口
-   4. Merge 等待所有输入到齐后一次性输出
-```
-
-### 配置位置
-- n8n UI → Merge 节点 → Settings → Number of Inputs
+Common traps and correct patterns for frequently misused nodes.
 
 ---
 
-## Loop Over Items 循环节点
+## Merge Node
 
-### 核心问题
-> ⚠️ **你可能不需要这个节点！** n8n 节点默认自动对每个 item 执行一次。
-> 只有需要**控制批次大小**或**添加延迟**时才使用。
+### Core Issue
+> ⚠️ **Number of Inputs defaults to 2!** Merging more than 2 branches requires manual adjustment.
 
-### 两个输出端口
+### Parameters
 
-| 端口 | 索引 | 说明 |
-|------|------|------|
-| done | 0 (第一个) | 循环**完成后**输出 |
-| loop | 1 (第二个) | 当前批次，需要**回连**形成循环 |
+| Parameter | Default | Notes |
+|-----------|---------|-------|
+| Mode | Append | Merge strategy; Append is most common |
+| Number of Inputs | 2 | **Must match the actual number of incoming branches** |
 
-### 常见错误
+### Common Mistakes
 
 ```
-❌ 只连接 done 端口，忘记 loop 回连
-   → 只执行一次，不会循环
+❌ 5 branches connected to Merge, but Number of Inputs = 2
+   → Only 2 input ports exist; the other 3 cannot connect
 
-❌ done 和 loop 接反了
-   → 逻辑完全错乱
+❌ Skipping Merge entirely — connecting multiple nodes directly to the same target
+   → Each source node triggers the target independently
+   → Target executes multiple times instead of waiting for all inputs
 
-❌ 回连到错误的输入端口
-   → 死循环或跳过处理
+✅ Correct approach:
+   1. Add a Merge node
+   2. Settings → Number of Inputs = actual branch count
+   3. Connect each branch to a different input port on Merge
+   4. Merge waits for all inputs before producing output
+```
 
-✅ 正确连接方式：
+### Where to Configure
+- n8n UI → Merge node → Settings → Number of Inputs
+
+---
+
+## Loop Over Items Node
+
+### Core Issue
+> ⚠️ **You probably don't need this node!** n8n automatically runs each node once per item.
+> Only use it when you need to **control batch size** or **add delays between batches**.
+
+### Two Output Ports
+
+| Port | Index | Description |
+|------|-------|-------------|
+| done | 0 (first) | Emits after the loop **completes** |
+| loop | 1 (second) | Current batch — must be **wired back** to form the loop |
+
+### Common Mistakes
+
+```
+❌ Only connecting the done port, forgetting to wire loop back
+   → Executes only once, never loops
+
+❌ Swapping done and loop
+   → Logic is completely broken
+
+❌ Wiring the loop back to the wrong input port
+   → Infinite loop or skipped processing
+
+✅ Correct wiring:
    Loop Over Items
-       ├── [done:0] → 循环结束后的处理
-       └── [loop:1] → 循环体处理 → Wait(可选) → 回连到 Loop 输入
+       ├── [done:0] → post-loop processing
+       └── [loop:1] → process item → Wait (optional) → back to Loop input
 ```
 
 ---
 
-## IF 条件节点
+## IF Node
 
-### 核心问题
-> ⚠️ **两个输出端口顺序！** true 在前，false 在后。
+### Core Issue
+> ⚠️ **Output port order matters!** `true` is first, `false` is second.
 
-### 两个输出端口
+### Two Output Ports
 
-| 端口 | 索引 | 说明 |
-|------|------|------|
-| true | 0 (第一个) | 条件为真时输出 |
-| false | 1 (第二个) | 条件为假时输出 |
+| Port | Index | Description |
+|------|-------|-------------|
+| true | 0 (first) | Emits when condition is true |
+| false | 1 (second) | Emits when condition is false |
 
-### 常见错误
+### Common Mistakes
 
 ```
-❌ 用 sourceIndex 连接时搞混 true/false
-   → sourceIndex=0 是 true，sourceIndex=1 是 false
+❌ Mixing up true/false when using sourceIndex
+   → sourceIndex=0 is true, sourceIndex=1 is false
 
-❌ 只连接一个输出端口
-   → 另一个分支的数据被丢弃
+❌ Only connecting one output port
+   → Data on the other branch is silently dropped
 
-✅ 使用 MCP 时用语义参数：
-   branch="true" 或 branch="false"
-   而不是 sourceIndex=0 或 sourceIndex=1
+✅ When using MCP, prefer semantic parameters:
+   branch="true" or branch="false"
+   instead of sourceIndex=0 or sourceIndex=1
 ```
 
 ---
 
-## Switch 分支节点
+## Switch Node
 
-### 核心问题
-> ⚠️ **输出端口数量与规则数量一致！** 每个规则对应一个输出。
+### Core Issue
+> ⚠️ **Output port count equals rule count!** Each rule gets its own output port.
 
-### 常见错误
+### Common Mistakes
 
 ```
-❌ 添加了 3 个规则，但只连接了 2 个输出
-   → 第 3 个规则匹配的数据无处可去
+❌ Defining 3 rules but only connecting 2 outputs
+   → Data matching the 3rd rule has nowhere to go
 
-❌ 用 sourceIndex 连接时数错了
-   → 数据路由到错误的分支
+❌ Miscounting sourceIndex when wiring
+   → Data is routed to the wrong branch
 
-✅ 使用 MCP 时用语义参数：
+✅ When using MCP, prefer semantic parameters:
    case=0, case=1, case=2...
-   而不是手动计算 sourceIndex
+   instead of manually calculating sourceIndex
 ```
 
 ---
 
-## HTTP Request 节点
+## HTTP Request Node
 
-### 核心问题
-> ⚠️ **下载文件时注意输出属性名！** 默认是 `data`，可自定义。
-> ⚠️ **分页优先用 HTTP Request 内置分页！** 不要先上 Loop。
+### Core Issues
+> ⚠️ **Watch the output property name when downloading files!** Default is `data`, but it's configurable.
+> ⚠️ **Use HTTP Request's built-in pagination first!** Don't reach for Loop before trying it.
 
-### 下载文件配置
+### File Download Configuration
 
-| 参数 | 路径 | 说明 |
-|------|------|------|
-| Response Format | options.response.response.responseFormat | 设为 `file` |
-| Output Property Name | options.response.response.outputPropertyName | 二进制属性名 |
+| Parameter | Path | Description |
+|-----------|------|-------------|
+| Response Format | options.response.response.responseFormat | Set to `file` |
+| Output Property Name | options.response.response.outputPropertyName | Binary property name |
 
-### 常见错误
+### Common Mistakes
 
 ```
-❌ 下载多个文件用相同的 outputPropertyName
-   → 后面的文件覆盖前面的
+❌ Downloading multiple files with the same outputPropertyName
+   → Later files overwrite earlier ones
 
-❌ 忘记设置 responseFormat: file
-   → 返回的是文本而不是二进制
+❌ Forgetting to set responseFormat: file
+   → Returns text instead of binary
 
-✅ 正确做法：
-   - 每个下载节点用不同的 outputPropertyName
-   - 例如：image1, image2, image3...
+✅ Correct approach:
+   - Use a unique outputPropertyName per download node
+   - e.g.: image1, image2, image3...
 ```
 
-### 分页补充
+### Pagination Note
 
-- 需要拉多页接口时，优先用 HTTP Request 的内置分页配置
-- 只有要做人为分批、等待、节流时，才考虑 Loop Over Items
-- 详细说明看 [docs/节点操作类/HTTP分页.md](/docs/节点操作类/HTTP分页.md)
+- For multi-page APIs, use HTTP Request's built-in pagination config first
+- Only use Loop Over Items when you need manual batching, delays, or throttling
+- See [docs/节点操作类/HTTP分页.md](/docs/节点操作类/HTTP分页.md) for details
 
 ---
 
-## Code 节点
+## Code Node
 
-### 核心问题
-> ⚠️ **mode 参数决定执行方式！**
+### Core Issue
+> ⚠️ **The `mode` parameter determines execution behavior!**
 
-### 两种模式
+### Two Modes
 
-| Mode | 说明 |
-|------|------|
-| runOnceForEachItem | 对每个 item 执行一次（默认） |
-| runOnceForAllItems | 只执行一次，处理所有 items |
+| Mode | Description |
+|------|-------------|
+| runOnceForEachItem | Runs once per item (default) |
+| runOnceForAllItems | Runs once for all items together |
 
-### 常见错误
+### Common Mistakes
 
 ```
-❌ 想合并多个 items 但用了 runOnceForEachItem
-   → 每个 item 单独处理，无法合并
+❌ Trying to merge multiple items but using runOnceForEachItem
+   → Each item is processed in isolation; merging is not possible
 
-❌ 想单独处理每个 item 但用了 runOnceForAllItems
-   → 需要自己写循环逻辑
+❌ Trying to process items individually but using runOnceForAllItems
+   → Must write your own loop logic
 
-✅ 合并多个 items 时：
+✅ To merge multiple items:
    mode: "runOnceForAllItems"
-   使用 $input.all() 获取所有 items
+   use $input.all() to access all items
 ```
 
-### 合并二进制数据示例
+### Merging Binary Data Example
 
 ```javascript
 // mode: runOnceForAllItems
@@ -205,72 +205,72 @@ for (const item of allItems) {
 }
 
 return [{
-  json: { message: `已合并 ${Object.keys(mergedBinary).length} 个文件` },
+  json: { message: `Merged ${Object.keys(mergedBinary).length} files` },
   binary: mergedBinary
 }];
 ```
 
 ---
 
-## AI Agent 节点
+## AI Agent Node
 
-### 核心问题
-> ⚠️ **必须连接 Chat Model！** 没有语言模型，Agent 无法工作。
+### Core Issue
+> ⚠️ **Must connect a Chat Model!** Without a language model, the Agent cannot function.
 
-### 必须的连接
+### Required Connections
 
-| 连接类型 | 说明 |
-|----------|------|
-| ai_languageModel | **必须** - 连接 Chat Model 节点 |
-| ai_tool | 可选 - 连接工具节点 |
-| ai_memory | 可选 - 连接记忆节点 |
-| ai_outputParser | 可选 - 连接输出解析器 |
+| Connection Type | Description |
+|----------------|-------------|
+| ai_languageModel | **Required** — connect a Chat Model node |
+| ai_tool | Optional — connect tool nodes |
+| ai_memory | Optional — connect memory nodes |
+| ai_outputParser | Optional — connect an output parser |
 
-### 常见错误
+### Common Mistakes
 
 ```
-❌ 创建 AI Agent 但没连接 Chat Model
-   → 验证失败，无法运行
+❌ Creating an AI Agent without connecting a Chat Model
+   → Validation fails; workflow cannot run
 
-❌ 用 main 类型连接 Chat Model
-   → 应该用 ai_languageModel 类型
+❌ Connecting Chat Model using the main connection type
+   → Must use ai_languageModel type instead
 
-✅ 正确连接：
+✅ Correct connection:
    sourceOutput: "ai_languageModel"
-   而不是 sourceOutput: "main"
+   not: sourceOutput: "main"
 ```
 
 ---
 
-## 并行分支 → 合并的完整模式
+## Parallel Branches → Merge Pattern
 
-当需要并行执行多个操作，然后合并结果时：
+When running multiple operations in parallel and merging results:
 
 ```
-触发器
-    ├── 操作1 ──┐
-    ├── 操作2 ──┤
-    ├── 操作3 ──┼──→ Merge (Number of Inputs = N) ──→ 后续处理
-    ├── ...    ──┤
-    └── 操作N ──┘
+Trigger
+    ├── Operation 1 ──┐
+    ├── Operation 2 ──┤
+    ├── Operation 3 ──┼──→ Merge (Number of Inputs = N) ──→ downstream
+    ├── ...           ──┤
+    └── Operation N ──┘
 ```
 
-### 关键配置
+### Key Configuration
 
-1. **Merge 节点**：Number of Inputs = 并行分支数
-2. **各分支**：连接到 Merge 的不同输入端口（targetIndex 0, 1, 2...）
-3. **后续节点**：只连接 Merge 的输出
+1. **Merge node**: Number of Inputs = number of parallel branches
+2. **Each branch**: Connect to a different Merge input port (targetIndex 0, 1, 2...)
+3. **Downstream node**: Connect only from Merge's output
 
 ---
 
-## 快速检查清单
+## Quick Checklist
 
-使用流程控制节点时，检查：
+When using flow control nodes, verify:
 
-- [ ] Merge：Number of Inputs = 实际分支数？
-- [ ] Loop：loop 端口有回连？
-- [ ] IF：true/false 分支都连接了？
-- [ ] Switch：每个 case 都有对应输出连接？
-- [ ] Code：mode 设置正确？
-- [ ] AI Agent：连接了 Chat Model？
-- [ ] HTTP 下载：outputPropertyName 唯一？
+- [ ] Merge: Number of Inputs matches the actual branch count?
+- [ ] Loop: loop port is wired back?
+- [ ] IF: both true and false branches are connected?
+- [ ] Switch: every case has an output connection?
+- [ ] Code: mode is set correctly?
+- [ ] AI Agent: Chat Model is connected?
+- [ ] HTTP download: outputPropertyName is unique per node?

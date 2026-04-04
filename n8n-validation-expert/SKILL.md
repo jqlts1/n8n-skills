@@ -4,173 +4,173 @@ description: |
   Use when validate_workflow returns errors or warnings, when SDK workflow code does not pass validation, or when someone needs help understanding what to fix first.
 ---
 
-# n8n 验证专家
+# n8n Validation Expert
 
-新版 MCP 的验证主语是“整段工作流代码”，不是孤立节点配置。
+In the current MCP version, validation targets the **entire workflow code**, not individual node configs.
 
-所以正确心智模型是：
+The correct mental model is:
 
 ```text
-写代码 -> validate_workflow -> 读报错 -> 修代码 -> 再验证
+write code -> validate_workflow -> read errors -> fix code -> validate again
 ```
 
-通常要来回 2 到 3 轮，这是正常的。
+Going back and forth 2–3 rounds is normal.
 
 ---
 
-## 先看什么
+## What to Look at First
 
-### 1. 先分级
+### 1. Triage by severity
 
-- **Errors**：必须修，不然工作流创建或更新过不去
-- **Warnings**：能运行，但大概率有风险
-- **Suggestions**：不是阻塞项，可以排后面
+- **Errors**: Must fix — workflow cannot be created or updated until resolved
+- **Warnings**: Workflow can run, but there's likely a real risk
+- **Suggestions**: Not blocking — can be addressed in a later round
 
-### 2. 再分来源
+### 2. Identify the source
 
-常见来源只有几类：
+Common sources:
 
-- 代码语法不对
-- 节点类型不对
-- 参数结构不对
-- 节点连接不对
-- 表达式不对
+- Syntax error in code
+- Wrong node type
+- Wrong parameter structure
+- Wrong node connections
+- Expression error
 
-不要一上来就大改整份代码，先判断报错属于哪一类。
+Don't rewrite the whole file at once. First decide which category the error belongs to.
 
 ---
 
-## 推荐验证循环
+## Recommended Validation Loop
 
-### 标准流程
+### Standard process
 
 ```javascript
 const result = validate_workflow({ code });
 ```
 
-然后按这个顺序处理：
+Then fix in this order:
 
-1. 先修语法和结构性错误
-2. 再修节点类型和参数类型
-3. 再修连接和引用
-4. 最后处理警告和建议
+1. Syntax and structural errors first
+2. Then node type and parameter type errors
+3. Then connection and reference errors
+4. Finally warnings and suggestions
 
-### 为什么这个顺序更稳
+### Why this order works
 
-因为前面的错误经常会“带出”后面的假问题。
+Early errors often produce false downstream errors.
 
-例如：
+For example:
 
-- 代码块括号没闭合
-- 节点 ID 写错
-- 某段参数结构层级写错
+- An unclosed bracket in a code block
+- A typo in a node ID
+- A parameter object nested at the wrong level
 
-这些问题不修，后面的报错信息会越来越乱。
+If you leave these unfixed, the error output gets noisier and harder to read.
 
 ---
 
-## 高频错误
+## High-Frequency Errors
 
-### 1. 语法错误
+### 1. Syntax errors
 
-表现：
+Signs:
 
-- 代码根本没法解析
-- 一串看起来不相关的错误一起冒出来
+- Code cannot be parsed at all
+- A flood of seemingly unrelated errors appear at once
 
-优先检查：
+Check first:
 
-- 括号
-- 逗号
-- 字符串引号
-- 对象和数组层级
+- Brackets and braces
+- Commas
+- String quotes
+- Object and array nesting
 
-### 2. 节点类型错误
+### 2. Wrong node type
 
-表现：
+Signs:
 
-- 节点类型不存在
-- 节点名像是猜出来的
+- Node type does not exist
+- Node name looks guessed
 
-修法：
+Fix:
 
 ```text
-search_nodes -> get_node_types -> 回填正确节点 ID
+search_nodes -> get_node_types -> fill in the correct node ID
 ```
 
-### 3. 参数类型或结构错误
+### 3. Wrong parameter type or structure
 
-表现：
+Signs:
 
-- 字段名不对
-- 某个字段应该是对象，你给成了字符串
-- 某个字段只在特定操作下存在
+- Field name is incorrect
+- A field expects an object but received a string
+- A field only exists under certain operations
 
-修法：
+Fix:
 
 ```text
-重新获取当前操作的类型定义 -> 对照修 node(...)
+Re-fetch the type definition for the current operation -> update node(...) accordingly
 ```
 
-### 4. 连接错误
+### 4. Connection errors
 
-表现：
+Signs:
 
-- 节点孤立
-- 连接到错误分支
-- AI 节点连接类型不对
+- Isolated node with no connections
+- Connected to the wrong branch
+- AI node uses wrong connection type
 
-修法：
+Fix:
 
-- 先确认工作流主路径是否完整
-- 再确认特殊连接类型是否正确
+- Verify the main workflow path is complete end-to-end
+- Check special connection types (e.g. `ai_languageModel`, `ai_tool`)
 
-### 5. 表达式错误
+### 5. Expression errors
 
-表现：
+Signs:
 
-- `{{ }}` 漏写
-- 引用了不存在的数据路径
-- 字段名含中文或特殊字符时写法不对
+- Missing `{{ }}`
+- Referencing a field path that doesn't exist
+- Field names with special characters written incorrectly
 
-修法：
+Fix:
 
-- 回到 `n8n-expression-syntax`
-- 优先确认当前节点实际拿到的数据结构
-
----
-
-## 不再推荐的旧思路
-
-- 不再依赖旧版的节点级验证接口
-- 不再区分旧版 profile
-- 不再依赖旧版的自动修复接口
-- 不再建议靠局部补丁修工作流碎片
-
-新版路径就是：完整代码验证，完整代码修正。
+- Go to `n8n-expression-syntax`
+- Confirm the actual data structure the current node receives
 
 ---
 
-## 排错优先级
+## Deprecated Approaches
 
-### 必须立刻处理
+- No longer using legacy node-level validation APIs
+- No longer distinguishing legacy profiles
+- No longer relying on legacy auto-fix APIs
+- No longer patching workflow fragments in isolation
 
-- 语法错误
-- 节点类型不存在
-- 必填字段缺失
-- 连接断裂
-
-### 可以第二轮处理
-
-- 警告
-- 建议
-- 最佳实践类提醒
+The current path is: **validate the full code, fix the full code**.
 
 ---
 
-## 与其他 Skill 的关系
+## Fix Priority
 
-- **n8n-mcp-tools-expert**：确认该调用哪个工具
-- **n8n-node-configuration**：回看字段和操作
-- **n8n-expression-syntax**：修表达式
-- **n8n-node-pitfalls**：排查 Loop、Merge、AI Agent 等节点坑
+### Must fix immediately
+
+- Syntax errors
+- Node type does not exist
+- Required field missing
+- Broken connection
+
+### Fix in second round
+
+- Warnings
+- Suggestions
+- Best-practice reminders
+
+---
+
+## Related Skills
+
+- **n8n-mcp-tools-expert** — confirm which tool to call
+- **n8n-node-configuration** — revisit fields and operations
+- **n8n-expression-syntax** — fix expressions
+- **n8n-node-pitfalls** — debug Loop, Merge, AI Agent traps

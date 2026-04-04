@@ -4,123 +4,123 @@ description: |
   Use when testing n8n workflows, deciding between mock testing and real execution, debugging failed runs, or figuring out what to inspect after execute_workflow, test_workflow, or get_execution results.
 ---
 
-# n8n 执行与测试
+# n8n Execution & Testing
 
-这份 Skill 只解决一件事：工作流已经画出来了，下一步该怎么测、怎么定位失败。
-
----
-
-## 什么时候用
-
-- 你已经有工作流，想先安全验证
-- 你不确定该用 `test_workflow` 还是 `execute_workflow`
-- 运行失败了，但不知道先看哪里
-- 你拿到了 `get_execution` 结果，不确定下一步该改节点、表达式还是连接
+This Skill answers one question: the workflow is built — how do I test it, and how do I find what broke?
 
 ---
 
-## 先做哪个测试
+## When to Use
 
-| 场景 | 推荐工具 | 原因 |
-|------|----------|------|
-| 还不想打真实外部服务 | `prepare_test_pin_data` + `test_workflow` | 先用模拟数据跑主链路 |
-| 要验证真实触发和真实集成 | `execute_workflow` | 看真实输入和真实执行结果 |
-| 已经失败，想定位哪一段坏了 | `get_execution` | 直接看节点级结果 |
+- You have a workflow and want to validate it safely before going live
+- You're unsure whether to use `test_workflow` or `execute_workflow`
+- An execution failed and you don't know where to start looking
+- You have `get_execution` results and aren't sure what to fix next
 
 ---
 
-## 推荐顺序
+## Which Test to Run First
+
+| Situation | Recommended tool | Reason |
+|-----------|-----------------|--------|
+| Don't want to hit real external services | `prepare_test_pin_data` + `test_workflow` | Run the main path with mock data first |
+| Need to verify real triggers and real integrations | `execute_workflow` | See real inputs and real execution results |
+| Already failed, need to find which part broke | `get_execution` | Inspect node-level results directly |
+
+---
+
+## Recommended Order
 
 ```text
 1. validate_workflow
-2. 能 mock 就先 mock：prepare_test_pin_data -> test_workflow
-3. 需要真实链路时再 execute_workflow
-4. 失败后立刻 get_execution
-5. 根据失败位置回到节点配置、表达式或连接关系
+2. Mock first if possible: prepare_test_pin_data -> test_workflow
+3. Use execute_workflow only when you need the real entry point
+4. After any failure: get_execution immediately
+5. Based on the failure location, return to node config, expressions, or connections
 ```
 
 ---
 
-## 如何判断用模拟还是真跑
+## Mock vs Real Execution
 
-### 优先用模拟测试
+### Prefer mock testing when
 
-- 工作流里有外部 API
-- 有凭证节点，不想真的发消息、写库、扣额度
-- 你现在主要想确认主链路、分支、表达式、字段映射
+- The workflow calls external APIs
+- Credentialed nodes are involved and you don't want to send real messages, write to a database, or consume quota
+- Your main goal right now is to confirm the main path, branches, expressions, and field mappings
 
-### 直接真实执行
+### Go straight to real execution when
 
-- 你要验证 webhook / chat / form 的真实入口
-- 你要确认上线前的真实行为
-- 模拟数据已经通过，现在只差最终联调
+- You need to verify a real webhook / chat / form entry point
+- You need to confirm behavior before going live
+- Mock tests have already passed and you're doing final end-to-end validation
 
 ---
 
-## 失败后先看什么
+## What to Look at After a Failure
 
-### 1. 如果 `validate_workflow` 就报错
+### 1. If `validate_workflow` reports errors
 
-- 先修代码结构、节点类型、参数结构
-- 不要跳到执行阶段
+- Fix code structure, node types, and parameter structure first
+- Don't jump to execution until validation passes
 
-### 2. 如果 `test_workflow` 失败
+### 2. If `test_workflow` fails
 
-优先怀疑：
+Most likely causes:
 
-- Pin 数据结构不对
-- 表达式引用错字段
-- 分支条件和预期输入不匹配
-- 某个逻辑节点对空值、数组、对象处理不对
+- Pin data structure doesn't match what the node expects
+- Expression references a wrong or missing field
+- Branch condition doesn't match the test input
+- A logic node doesn't handle null, arrays, or objects correctly
 
-### 3. 如果 `execute_workflow` 失败
+### 3. If `execute_workflow` fails
 
-优先怀疑：
+Most likely causes:
 
-- 真实输入结构和你想的不一样
-- 凭证、权限、网络、外部服务响应异常
-- 上游节点输出和测试数据不一致
+- Real input structure differs from what you assumed
+- Credential, permission, network, or external service issue
+- Upstream node output doesn't match your mock data
 
-### 4. 如果只知道“执行失败”
+### 4. If you only know "execution failed"
 
-这还不够。必须继续：
+That's not enough information. You must continue:
 
 ```text
-execute_workflow -> get_execution -> 找失败节点 -> 回到对应 Skill 修
+execute_workflow -> get_execution -> find the failing node -> go to the relevant Skill
 ```
 
 ---
 
-## 失败类型到下一步动作
+## Failure Type → Next Action
 
-| 看到的问题 | 下一步 |
-|------------|--------|
-| 字段取不到、表达式报错 | 转到 `n8n-expression-syntax` |
-| 某节点参数不对 | 转到 `n8n-node-configuration` |
-| 分支、循环、合并异常 | 转到 `n8n-node-pitfalls` |
-| 整体代码验证不过 | 转到 `n8n-validation-expert` |
-
----
-
-## 常见误区
-
-### ❌ 一上来就真实执行
-
-外部服务一多，失败来源会混在一起，排查很慢。
-
-### ❌ 模拟通过就当上线没问题
-
-模拟只说明主链路和映射大体没问题，不代表真实凭证、权限、外部响应一定对。
-
-### ❌ 失败后只盯最终报错
-
-真正要看的不是一句报错，而是**哪个节点先坏了、它收到的输入是什么、它吐出了什么**。
+| What you see | Next step |
+|-------------|-----------|
+| Can't read a field / expression error | Go to `n8n-expression-syntax` |
+| Wrong node parameters | Go to `n8n-node-configuration` |
+| Branch, loop, or merge behaving unexpectedly | Go to `n8n-node-pitfalls` |
+| Full workflow code fails validation | Go to `n8n-validation-expert` |
 
 ---
 
-## 相关入口
+## Common Misconceptions
 
-- `n8n-mcp-tools-expert`：各 MCP 工具总览
-- `n8n-validation-expert`：验证错误怎么拆
-- `n8n-node-configuration`：节点参数怎么补
-- `n8n-expression-syntax`：表达式怎么修
+### ❌ Running real execution immediately
+
+When multiple external services are involved, failure sources mix together and debugging becomes slow.
+
+### ❌ Assuming mock success means production is fine
+
+Mock tests confirm that the main path and field mappings are roughly correct — not that real credentials, permissions, and external responses will work.
+
+### ❌ Only looking at the final error message
+
+The real insight is not a single error line — it's **which node failed first, what input it received, and what it produced**.
+
+---
+
+## Related Skills
+
+- `n8n-mcp-tools-expert` — overview of all MCP tools
+- `n8n-validation-expert` — how to break down validation errors
+- `n8n-node-configuration` — how to fix node parameters
+- `n8n-expression-syntax` — how to fix expressions

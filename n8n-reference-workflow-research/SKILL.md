@@ -4,145 +4,145 @@ description: |
   Use when looking for existing n8n workflow examples, asking for similar workflow references before building, comparing reusable patterns, or deciding whether to adapt a reference workflow or design one from scratch.
 ---
 
-# n8n 参考工作流研究
+# n8n Reference Workflow Research
 
-这份 Skill 用来先找参考，再决定怎么做，不是一上来就从零搭。
-
----
-
-## 什么时候用
-
-- 用户说“有没有类似工作流可以参考”
-- 用户说“先帮我找现成方案”
-- 用户说“先搜几个示例再决定怎么搭”
-- 你不确定这个流程该自己设计，还是先借鉴已有案例
+This Skill is about **finding references first, then deciding how to build** — not jumping straight into designing from scratch.
 
 ---
 
-## 资料优先级
+## When to Use
 
-### 1. 先看你自己的实例
+- User says "is there a similar workflow I can reference?"
+- User says "find me an existing solution first"
+- User says "search for a few examples before I decide how to build this"
+- You're unsure whether to design the flow yourself or start from an existing example
 
-优先用：
+---
+
+## Source Priority
+
+### 1. Your own instance first
+
+Prefer:
 
 - `search_workflows`
 - `get_workflow_details`
 
-因为你自己实例里的工作流最接近真实可复用资产。
+Your own instance has the most relevant, reusable assets.
 
-### 2. 再看参考资源接口
+### 2. Reference resource API next
 
-看这份文档：
+Check this document:
 
 - [docs/API接口/参照资源接口.md](/docs/API接口/参照资源接口.md)
 
-它适合：
+Useful for:
 
-- 搜公开参考流程
-- 看详情
-- 下载 JSON
-- 看 Mermaid 图
+- Searching public reference workflows
+- Viewing details
+- Downloading JSON
+- Viewing Mermaid diagrams
 
-### 3. 最后用官方文档校对
+### 3. Official docs last — for validation, not discovery
 
-优先用：
+Use:
 
 - `n8n-docs`
 
-它不是给你找案例，而是用来确认：
+Not for finding examples. Use it to confirm:
 
-- 节点能力是不是真的存在
-- 某种搭法是不是官方支持
-- 某些功能有没有限制
+- Whether a node capability actually exists
+- Whether a particular approach is officially supported
+- Whether there are known limitations
 
 ---
 
-## 推荐流程
+## Recommended Process
 
 ```text
-1. 先抽出目标：触发方式、核心动作、输出结果
-2. search_workflows 看自己实例里有没有类似的
-3. 不够再查参照资源接口
-4. 从候选里提炼可复用骨架
-5. 用 n8n-docs 校对关键节点和能力
-6. 再决定进入 n8n-prototype 还是 n8n-workflow-patterns
+1. Extract the goal: trigger type, core action, output result
+2. search_workflows — check if your own instance has something similar
+3. If not enough, check the reference resource API
+4. Extract a reusable skeleton from the candidates
+5. Use n8n-docs to verify key nodes and capabilities
+6. Decide whether to proceed to n8n-prototype or n8n-workflow-patterns
 ```
 
 ---
 
-## 查找时要抓的关键信息
+## Key Information to Look For
 
-- 触发方式：Webhook / 定时 / 表单 / AI / 手动
-- 核心动作：拉数据、写库、发消息、分类、审批
-- 外部集成：Slack、飞书、数据库、HTTP API、AI 模型
-- 复杂度：简单主链路、带分支、带循环、带缓存
+- **Trigger type**: Webhook / Schedule / Form / AI / Manual
+- **Core actions**: Pull data, write to DB, send message, classify, approve
+- **External integrations**: Slack, DingTalk, databases, HTTP APIs, AI models
+- **Complexity**: Simple main path, branching, looping, caching
 
-不要只搜一个很宽的关键词。要尽量把“触发 + 动作 + 输出”一起带上。
-
----
-
-## 输出时要给什么
-
-研究结果至少要整理成这 4 块：
-
-1. 最像的参考候选
-2. 可以直接借用的流程骨架
-3. 只能借思路、不能直接照搬的部分
-4. 下一步应该进入哪个 Skill
-
-### 常见下一步
-
-- 结构还没定：转 `n8n-prototype`
-- 模式还没定：转 `n8n-workflow-patterns`
-- 已经知道要用哪些节点：转 `n8n-node-configuration`
+Don't search with a broad single keyword. Include trigger + action + output together.
 
 ---
 
-## 重点提醒
+## What to Deliver as Output
 
-### 参考流程不是可直接上线的成品
+Research results should be organized into these 4 parts:
 
-重点看的是：
+1. The closest matching reference candidates
+2. Flow skeleton that can be directly reused
+3. Parts that are only useful as inspiration — not for direct copying
+4. Which Skill to go to next
 
-- 结构有没有借鉴价值
-- 节点组合是否合理
-- 分支、循环、缓存、错误处理怎么设计
+### Common next steps
 
-不要把外部凭证、字段名、路径、业务规则直接照搬。
-
-### 参考资源接口不是实例 MCP
-
-它只能帮你找示例，不会直接修改你自己的工作流。
-
-### 先找骨架，再配细节
-
-研究阶段的目标不是“把每个字段都抠出来”，而是先判断：
-
-- 值不值得参考
-- 哪些部分可以复用
-- 下一步怎么落地最快
+- Structure not decided yet → `n8n-prototype`
+- Pattern not decided yet → `n8n-workflow-patterns`
+- Already know which nodes to use → `n8n-node-configuration`
 
 ---
 
-## 常见误区
+## Important Reminders
 
-### ❌ 只看标题像不像
+### Reference workflows are not production-ready
 
-标题相似不代表流程真的能复用。必须看触发方式、核心节点和输出。
+Focus on:
 
-### ❌ 直接下载 JSON 就照搬
+- Whether the structure has reuse value
+- Whether the node combination is reasonable
+- How branching, looping, caching, and error handling are designed
 
-参考工作流常常只适合借结构，不适合直接跑在你的实例里。
+Don't copy external credentials, field names, paths, or business rules directly.
 
-### ❌ 找到参考后还继续乱搜
+### The reference resource API is not your instance's MCP
 
-一旦已经找到 1 到 3 个足够接近的案例，就该开始提炼骨架，不要无限搜。
+It only helps you find examples — it does not modify your own workflows.
+
+### Find the skeleton first, configure details later
+
+The goal of the research phase is not to extract every field. The goal is to judge:
+
+- Whether a reference is worth using
+- Which parts can be reused
+- What's the fastest path to implementation
 
 ---
 
-## 与其他 Skill 的关系
+## Common Mistakes
 
-- `n8n-prototype`：把研究结果变成可讨论的流程骨架
-- `n8n-workflow-patterns`：确定该用哪种工作流模式
-- `n8n-mcp-tools-expert`：需要回到实例 MCP 或官方文档时使用
-- `n8n-node-configuration`：准备进入真实节点配置时使用
+### ❌ Judging only by title similarity
+
+Similar titles don't mean the flow is actually reusable. Always check trigger type, core nodes, and output.
+
+### ❌ Downloading JSON and copying it directly
+
+Reference workflows are usually suitable for borrowing structure — not for running directly in your instance.
+
+### ❌ Continuing to search after finding good candidates
+
+Once you have 1–3 sufficiently close examples, start extracting the skeleton. Don't keep searching indefinitely.
+
+---
+
+## Related Skills
+
+- `n8n-prototype` — turn research results into a discussable flow skeleton
+- `n8n-workflow-patterns` — decide which workflow pattern to use
+- `n8n-mcp-tools-expert` — when you need to go back to your instance MCP or official docs
+- `n8n-node-configuration` — when you're ready to configure real nodes
