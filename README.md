@@ -1,32 +1,46 @@
-# n8n 工作流开发 Skills 集合
+# n8n Skills Collection
 
-这是一组为 n8n 工作流自动化开发定制的专业 Skills，覆盖从流程设计、节点配置、表达式编写，到验证、测试、执行监控的完整开发生命周期。每个 Skill 对应一个具体的开发阶段或职责，通过组合使用完成复杂任务。
+**[中文文档](README.zh.md)**
+
+A collection of specialized Skills for building n8n workflows with Claude Code. These Skills guide AI through the entire workflow development lifecycle — from prototyping to node configuration, expression writing, validation, testing, and execution debugging.
 
 ---
 
-## 在其他项目中使用
+## What's Included
 
-### 方式一：Clone 直接使用
+| Skill | Purpose |
+|-------|---------|
+| `n8n-prototype` | Rapidly sketch workflow structures using noOp placeholders before building the real thing |
+| `n8n-workflow-patterns` | Choose the right architecture pattern (Webhook, API, Database, AI Agent, Scheduled) |
+| `n8n-reference-workflow-research` | Find existing workflow examples before designing from scratch |
+| `n8n-node-configuration` | Determine correct node parameters and translate them into SDK code |
+| `n8n-expression-syntax` | Write and debug n8n `{{ }}` expressions |
+| `n8n-mcp-tools-expert` | Complete guide to all 18 n8n MCP tools — search, create, update, test, publish |
+| `n8n-validation-expert` | Interpret and fix `validate_workflow` errors and warnings |
+| `n8n-node-pitfalls` | Quick reference for common mistakes in Merge, Loop, IF, and Switch nodes |
+| `n8n-execution-testing` | Decide between mock testing and real execution; debug failed runs |
+
+---
+
+## Installation
+
+### Option 1: Clone directly
 
 ```bash
-# 进入你的项目目录
-cd your-project
-
-# clone 到 .codex/skills
-git clone <this-repo-url> .codex/skills
+git clone https://github.com/jqlts1/n8n-skills .codex/skills
 ```
 
-Claude Code 会自动识别 `.codex/skills/` 下的所有 Skill，无需额外配置。
+Claude Code automatically picks up all Skills in `.codex/skills/`. No extra config needed.
 
-### 方式二：Symlink（推荐多项目共用）
+### Option 2: Symlink (recommended for multiple projects)
 
-先把仓库 clone 到一个中央位置，再在各项目里创建 symlink，更新一次全部同步：
+Clone once to a central location, then symlink into each project. One `git pull` updates everything.
 
 ```bash
-# 1. clone 到本机中央位置（只需一次）
-git clone <this-repo-url> ~/.local/share/n8n-skills
+# Clone once
+git clone https://github.com/jqlts1/n8n-skills ~/.local/share/n8n-skills
 
-# 2. 在你的项目里批量创建 symlink
+# Link into your project
 SKILLS_REPO=~/.local/share/n8n-skills
 SKILLS_DIR=your-project/.codex/skills
 
@@ -38,328 +52,226 @@ for skill in n8n-prototype n8n-node-configuration n8n-expression-syntax \
   ln -s $SKILLS_REPO/$skill $SKILLS_DIR/$skill
 done
 
-# 3. 以后更新：只需在中央位置 pull，所有项目自动同步
+# Update all projects at once
 cd ~/.local/share/n8n-skills && git pull
 ```
 
-### 方式三：Git Submodule（多人协作）
+### Option 3: Git Submodule (team projects)
 
 ```bash
-git submodule add <this-repo-url> .codex/skills
+git submodule add https://github.com/jqlts1/n8n-skills .codex/skills
 git submodule update --init
 ```
 
-团队成员 clone 后运行 `git submodule update --init` 即可。
+---
+
+## How to Use
+
+Invoke any Skill with a slash command:
+
+```
+/skill-name [optional description]
+```
+
+Examples:
+```
+/n8n-prototype design an order processing workflow
+/n8n-validation-expert fix this validation error
+/n8n-execution-testing workflow failed, where do I look first
+```
+
+When triggered, the Skill loads its `SKILL.md` into context and Claude follows the embedded instructions.
 
 ---
 
-## 调用语法
+## When to Use Which Skill
 
-```
-/skill-name [可选描述]
-```
-
-示例：
-```
-/n8n-prototype 画一个订单处理流程
-/n8n-validation-expert 这个验证错误怎么修
-/n8n-execution-testing 工作流跑失败了，不知道哪里出问题
-```
-
-Skill 触发后会加载对应的 `SKILL.md` 文件进入上下文，AI 按其中的指引行动。
-
----
-
-## 触发条件速查表
-
-| Skill | 用这个 Skill 的时机 | 不要用的情况 |
-|-------|-------------------|------------|
-| `n8n-prototype` | 用户说"画个流程"、"设计工作流"、"搭原型"；把业务描述转为 n8n 可视化结构 | 已经在写真实 SDK 代码，不需要先画原型 |
-| `n8n-workflow-patterns` | 不确定工作流应该用什么架构（Webhook/API/DB/AI/定时）；需要选结构模式 | 架构已经定了，只差具体节点配置 |
-| `n8n-reference-workflow-research` | 用户想先看现成案例再决定怎么搭；不确定这个流程是否已有参考 | 需求独特，没有复用价值，直接设计即可 |
-| `n8n-node-configuration` | 需要知道某个节点的必填字段；不确定参数结构；把参数知识转换成 SDK 代码 | 节点已经配好，只是在验证或调试 |
-| `n8n-expression-syntax` | 写 `{{ }}` 表达式；遇到表达式报错；引用其他节点数据 | 不涉及表达式，只做节点配置 |
-| `n8n-mcp-tools-expert` | 需要搜索节点、读类型定义、创建/更新/查找工作流；不确定用哪个 MCP 工具 | 只需要了解表达式或验证逻辑，不涉及 MCP 工具调用 |
-| `n8n-validation-expert` | `validate_workflow` 返回错误或警告；不知道先修哪个、怎么修 | 代码还没写完，不到验证阶段 |
-| `n8n-node-pitfalls` | 用到 Merge、Loop Over Items、IF、Switch 等流程控制节点；并行分支有问题；节点输出不符合预期 | 使用普通数据处理节点，没有流程控制结构 |
-| `n8n-execution-testing` | 工作流已有，需要决定怎么测试；执行失败不知道先看哪里；拿到 `get_execution` 结果不知道下一步 | 工作流还没建好，还在写代码阶段 |
-| `skill-creator` | 用户要创建新 Skill 或更新现有 Skill；需要了解 SKILL.md 的格式和写法规范 | 已有 Skill 能满足需求，不需要新建 |
+| Skill | Use when... | Don't use when... |
+|-------|-------------|-------------------|
+| `n8n-prototype` | User says "draw a workflow", "design a flow", or describes a business process to automate | Already writing real SDK code |
+| `n8n-workflow-patterns` | Unsure which architecture to use (Webhook / API / DB / AI / Scheduled) | Architecture is already decided |
+| `n8n-reference-workflow-research` | Want to find similar examples before designing | Requirements are unique, no reference needed |
+| `n8n-node-configuration` | Need to know required fields for a node; translating params into SDK code | Node is already configured, just debugging |
+| `n8n-expression-syntax` | Writing `{{ }}` expressions; getting expression errors | No expressions involved |
+| `n8n-mcp-tools-expert` | Searching nodes, reading type definitions, creating/updating/finding workflows | Only working with expressions or validation logic |
+| `n8n-validation-expert` | `validate_workflow` returns errors or warnings; unsure what to fix first | Code isn't written yet |
+| `n8n-node-pitfalls` | Using Merge, Loop Over Items, IF, or Switch; parallel branch issues | Using simple data processing nodes |
+| `n8n-execution-testing` | Workflow is built; deciding how to test; execution failed | Still writing the workflow code |
 
 ---
 
-## Skill 协作流程
+## Workflow: Common Multi-Skill Sequences
 
-### 场景 1：全新工作流开发
-
-```
-1. n8n-reference-workflow-research   先找有没有类似案例可以借鉴
-         ↓
-2. n8n-prototype                     画骨架原型，确认流程结构
-         ↓
-3. n8n-workflow-patterns             选定架构模式（Webhook/API/AI等）
-         ↓
-4. n8n-node-configuration            确认节点参数，写 SDK 代码
-         ↓
-5. n8n-expression-syntax             （有表达式时）确认语法正确
-         ↓
-6. n8n-mcp-tools-expert              validate → create_workflow_from_code
-         ↓
-7. n8n-validation-expert             修复验证错误（通常需要 2-3 轮）
-         ↓
-8. n8n-execution-testing             mock 测试 → 真实执行 → 定位失败
-```
-
-### 场景 2：修改已有工作流
+### Building a new workflow from scratch
 
 ```
-1. n8n-mcp-tools-expert              search_workflows → get_workflow_details
-         ↓
-2. n8n-node-configuration            修改节点参数，更新 SDK 代码
-         ↓
-3. n8n-validation-expert             validate → 修复错误
-         ↓
-4. n8n-mcp-tools-expert              update_workflow
-         ↓
-5. n8n-execution-testing             验证修改效果
+n8n-reference-workflow-research   → find similar examples
+        ↓
+n8n-prototype                     → sketch the structure, confirm flow
+        ↓
+n8n-workflow-patterns             → lock in the architecture pattern
+        ↓
+n8n-node-configuration            → configure nodes, write SDK code
+        ↓
+n8n-expression-syntax             → (if expressions needed) validate syntax
+        ↓
+n8n-mcp-tools-expert              → validate → create_workflow_from_code
+        ↓
+n8n-validation-expert             → fix errors (usually 2–3 rounds)
+        ↓
+n8n-execution-testing             → mock test → real execution → debug
 ```
 
-### 场景 3：调试失败的工作流
+### Modifying an existing workflow
 
 ```
-1. n8n-execution-testing             分析失败类型（节点/表达式/连接）
-         ↓
-2. n8n-node-pitfalls                 （如有流程控制节点）排查常见陷阱
-      或
-   n8n-expression-syntax             （如是表达式问题）修复语法
-      或
-   n8n-node-configuration            （如是参数问题）核对字段结构
-         ↓
-3. n8n-validation-expert             修复后重新验证
-         ↓
-4. n8n-mcp-tools-expert              update_workflow → 重新执行
+n8n-mcp-tools-expert              → search_workflows → get_workflow_details
+        ↓
+n8n-node-configuration            → update node params
+        ↓
+n8n-validation-expert             → validate → fix
+        ↓
+n8n-mcp-tools-expert              → update_workflow
+        ↓
+n8n-execution-testing             → verify the change
 ```
 
-### 场景 4：快速原型讨论
+### Debugging a failed workflow
 
 ```
-1. n8n-prototype                     用骨架/混合模式快速画出流程
-         ↓
-   （用户确认流程结构）
-         ↓
-2. n8n-node-configuration            把 noOp 占位节点替换为真实节点
-         ↓
-3. n8n-mcp-tools-expert              validate → create
+n8n-execution-testing             → identify which node failed
+        ↓
+n8n-node-pitfalls                 → (flow control nodes) check common traps
+   or
+n8n-expression-syntax             → (expression errors) fix syntax
+   or
+n8n-node-configuration            → (wrong params) check field structure
+        ↓
+n8n-validation-expert             → re-validate after fixes
 ```
 
 ---
 
-## 各 Skill 详细说明
+## Skill Reference
+
+### `n8n-prototype`
+
+Quickly visualize a business process as an n8n workflow using noOp placeholder nodes and Sticky Notes.
+
+**Three prototype modes:**
+
+| Mode | When to use |
+|------|------------|
+| Skeleton | Discuss flow logic, no tech decisions yet |
+| Mixed ⭐ | Core nodes are real, business logic uses noOp |
+| Executable | Flow is confirmed, build a runnable version directly |
+
+**noOp naming convention:** `[Tag] Verb + Object`
+- `[API] Call payment endpoint`
+- `[DB] Query order records`
+- `[Notify] Send Slack message`
+- `[AI] Classify content`
 
 ---
 
-### `n8n-prototype` — 工作流原型设计
+### `n8n-workflow-patterns`
 
-**用途**：快速把业务描述可视化为 n8n 工作流结构图，用 noOp 节点占位，Sticky Note 标注说明。
+Five core patterns — use this Skill to decide the overall structure before writing any code.
 
-**用户典型输入**：
-- "帮我设计一个处理订单的流程"
-- "画一个 Webhook 接收数据后发通知的流程"
-- "这个业务流程怎么用 n8n 实现"
-
-**AI 应该做什么**：
-1. 先询问用户选择原型模式（骨架/混合/可执行）
-2. 用 `manualTrigger` 或用户指定的触发器
-3. 业务逻辑用 noOp 占位，命名格式：`[类型] 动词+对象`，如 `[API] 调用支付接口`
-4. 添加 Sticky Note 写整体说明
-5. 调用 `n8n-mcp-tools-expert` 创建原型工作流
-
-**noOp 命名类型标签**：`[API]` `[DB]` `[通知]` `[文件]` `[AI]` `[人工]`
+| Pattern | Best for |
+|---------|---------|
+| Webhook processing | External push events, form submissions |
+| HTTP API integration | Third-party API calls, data sync |
+| Database operations | ETL, periodic cleanup, reconciliation |
+| AI Agent workflow | Intelligent chat, multi-tool agents, structured output |
+| Scheduled tasks | Periodic jobs, batch processing, reports |
 
 ---
 
-### `n8n-workflow-patterns` — 工作流模式选择
+### `n8n-node-configuration`
 
-**用途**：帮 AI 和用户确定工作流的架构模式，解决"这个流程该怎么搭"的问题。
-
-**用户典型输入**：
-- "我要接收 Webhook 数据然后处理"
-- "我想搭一个 AI Agent 工作流"
-- "每天定时同步数据库"
-
-**AI 应该做什么**：根据用户描述匹配以下 5 种模式之一，并给出骨架结构：
-
-| 模式 | 适用场景 |
-|------|----------|
-| Webhook 处理 | 接收外部推送、表单提交 |
-| HTTP API 集成 | 调第三方 API、拉取/同步数据 |
-| 数据库操作 | ETL、数据同步、定时对账 |
-| AI Agent | 智能对话、多工具调用、结构化输出 |
-| 定时任务 | 定期执行、批量处理、报告生成 |
-
----
-
-### `n8n-reference-workflow-research` — 参考工作流研究
-
-**用途**：在开始设计前，先找现有案例，决定是复用还是从头设计。
-
-**用户典型输入**：
-- "有没有类似的工作流可以参考"
-- "先帮我搜几个示例再决定怎么搭"
-- "这种流程有没有现成方案"
-
-**AI 应该做什么**：
-1. 先用 `search_workflows` 找自己实例里的类似工作流
-2. 再查参照资源接口（见 `docs/API接口/参照资源接口.md`）获取公开示例
-3. 最后用 `n8n-docs` 校对节点能力限制
-4. 总结：哪些部分可以直接借用，哪些只能借思路
-
----
-
-### `n8n-node-configuration` — 节点配置
-
-**用途**：确认节点的正确参数结构，把参数知识转换为可执行的 SDK 代码。
-
-**用户典型输入**：
-- "Slack 节点发送消息需要哪些字段"
-- "这个节点的参数怎么写"
-- "怎么配置 HTTP Request 节点"
-
-**AI 应该做什么**：
-```
-search_nodes({queries: ["节点关键词"]})
-  → 获取节点 ID 和 discriminators
-  → get_node_types({nodeIds: [...]})
-  → 读 TypeScript 类型定义
-  → 按操作类型写 node(...) 参数
-```
-
-**核心原则**：配置是**操作感知的**，`resource` + `operation` 不同，必填字段就不同，不要跨操作复制字段。
-
----
-
-### `n8n-expression-syntax` — 表达式语法
-
-**用途**：确认 n8n 表达式语法正确，修复常见语法错误。
-
-**用户典型输入**：
-- "怎么引用上一个节点的数据"
-- "表达式报错，不知道哪里写错了"
-- "这个 `{{...}}` 怎么写"
-
-**核心规则**：
+Configuration is **operation-aware**: the same node has different required fields depending on `resource` + `operation`. Always call `get_node_types` with discriminators before writing SDK code.
 
 ```
+search_nodes → get_node_types → read TypeScript types → write node() params
+```
+
+---
+
+### `n8n-expression-syntax`
+
+All dynamic values use double curly braces:
+
+```javascript
 ✅ {{ $json.email }}
-✅ {{ $json["字段名"] }}
-✅ {{ $node["节点名"].json.字段 }}
-❌ $json.email         （缺花括号）
-❌ { $json.email }     （单花括号）
+✅ {{ $json["field name"] }}
+✅ {{ $node["Node Name"].json.field }}
+❌ $json.email          // no braces
+❌ { $json.email }      // single braces
 ```
 
-常用变量：`$json`（当前节点）、`$node["名称"]`（指定节点）、`$now`（当前时间）、`$today`（今天日期）
+Key variables: `$json` (current node), `$node["name"]` (other nodes), `$now`, `$today`, `$input.all()`
 
 ---
 
-### `n8n-mcp-tools-expert` — MCP 工具专家
+### `n8n-mcp-tools-expert`
 
-**用途**：所有 n8n MCP 工具的使用指南，包括搜索节点、读类型、创建/更新/管理工作流。
+Full reference for all 18 n8n MCP tools across 8 categories:
 
-**用户典型输入**：
-- "怎么搜索某个节点"
-- "怎么创建工作流"
-- "不知道用哪个 MCP 工具"
+| Category | Tools |
+|----------|-------|
+| Node discovery | `search_nodes` `get_node_types` `get_suggested_nodes` |
+| SDK reference | `get_sdk_reference` |
+| Workflow management | `validate_workflow` `create_workflow_from_code` `update_workflow` `get_workflow_details` `search_workflows` |
+| Execution | `execute_workflow` `get_execution` |
+| Testing | `prepare_test_pin_data` `test_workflow` |
+| Lifecycle | `publish_workflow` `unpublish_workflow` `archive_workflow` |
+| Organization | `search_projects` `search_folders` |
 
-**18 个工具 8 大类速查**：
-
-| 类别 | 核心工具 |
-|------|---------|
-| 节点发现 | `search_nodes` `get_node_types` `get_suggested_nodes` |
-| SDK 参考 | `get_sdk_reference` |
-| 工作流管理 | `validate_workflow` `create_workflow_from_code` `update_workflow` `get_workflow_details` `search_workflows` |
-| 执行监控 | `execute_workflow` `get_execution` |
-| 测试 | `prepare_test_pin_data` `test_workflow` |
-| 生命周期 | `publish_workflow` `unpublish_workflow` `archive_workflow` |
-| 组织管理 | `search_projects` `search_folders` |
-
-**重要**：`update_workflow` 是**整体替换**，不是局部补丁。创建或更新前必须先 `validate_workflow`。
+> `update_workflow` is a **full replacement**, not a patch. Always `validate_workflow` before creating or updating.
 
 ---
 
-### `n8n-validation-expert` — 验证专家
+### `n8n-validation-expert`
 
-**用途**：解读 `validate_workflow` 返回的错误和警告，给出修复顺序和方法。
+Fix `validate_workflow` errors in the right order:
 
-**用户典型输入**：
-- "验证报错了，不知道怎么修"
-- "这个 warning 是什么意思"
-- "修了一个错误，又出来新错误"
+1. Syntax and structural errors first
+2. Then node type and parameter type errors
+3. Then connection and reference errors
+4. Finally warnings and suggestions
 
-**AI 应该做什么**：
-1. 先按级别分类：Errors（必须修）> Warnings（有风险）> Suggestions（可选）
-2. 修复顺序：语法错误 → 节点类型错误 → 参数结构错误 → 连接错误 → 表达式错误
-3. 修完再跑一轮 `validate_workflow`，通常需要 2-3 轮
-
-**注意**：前面的错误会"带出"后面的假问题，不要一次性大改全部代码。
+Early errors often produce false downstream errors — fix top-down, not all at once.
 
 ---
 
-### `n8n-node-pitfalls` — 节点易错点速查
+### `n8n-node-pitfalls`
 
-**用途**：流程控制节点的常见陷阱和正确做法，防止常见配置错误。
+**Merge node:** `Number of Inputs` defaults to 2. If you're merging more than 2 branches, set it manually in Settings.
 
-**用户典型输入**：
-- "Merge 节点为什么只收到部分数据"
-- "Loop 节点为什么只执行一次"
-- "并行分支怎么合并"
-
-**覆盖节点**：
-
-| 节点 | 常见陷阱 |
-|------|---------|
-| **Merge** | Number of Inputs 默认 2，合并多于 2 个分支必须手动改 |
-| **Loop Over Items** | `loop` 端口（索引 1）必须回连到自身，否则只执行一次；大多数情况不需要用这个节点 |
-| **IF / Switch** | — |
+**Loop Over Items:** Most of the time you don't need this node — n8n automatically runs each node once per item. Only use it when you need to control batch size or add delays between batches. The `loop` output port (index 1) **must be wired back** to the Loop node itself, or it only runs once.
 
 ---
 
-### `n8n-execution-testing` — 执行与测试
+### `n8n-execution-testing`
 
-**用途**：决定如何测试工作流，以及执行失败后如何定位问题。
+| Situation | Recommended tool |
+|-----------|-----------------|
+| Don't want to hit real external services | `prepare_test_pin_data` + `test_workflow` |
+| Need to verify real webhook / chat entry | `execute_workflow` |
+| Already failed, need to find which node | `get_execution` → inspect node-level output |
 
-**用户典型输入**：
-- "这个工作流该先 mock 测还是直接执行"
-- "执行失败了不知道从哪里看"
-- "拿到 get_execution 结果，下一步怎么办"
-
-**测试决策**：
-
-| 场景 | 推荐方式 |
-|------|---------|
-| 有外部 API，不想真的调用 | `prepare_test_pin_data` + `test_workflow` |
-| 验证真实 webhook/chat 入口 | `execute_workflow` |
-| 已失败，定位哪一段坏了 | `get_execution` 看节点级结果 |
-
-**失败后的定位顺序**：先看哪个节点失败 → 看该节点的输入/输出 → 根据错误类型跳转到 `n8n-node-pitfalls` / `n8n-expression-syntax` / `n8n-node-configuration`
+Recommended order: `validate_workflow` → mock test → real execution → `get_execution` on failure
 
 ---
 
-### `skill-creator` — Skill 创建指南（元技能）
+## Requirements
 
-**用途**：指导如何创建新 Skill 或更新现有 Skill 的结构和写法。
+- [Claude Code](https://claude.ai/code) CLI or IDE extension
+- An n8n instance with the [n8n MCP server](https://github.com/n8n-io/n8n-mcp) configured
 
-**用户典型输入**：
-- "我想创建一个新的 Skill"
-- "这个 Skill 需要更新，怎么修"
-- "SKILL.md 怎么写"
-
-**SKILL.md 必需结构**：
-```yaml
 ---
-name: skill-name
-description: |
-  一句话说明用途和触发场景。
----
-```
-正文用 Markdown，优先用示例代替长篇解释，保持精简（context window 是公共资源）。
 
-**原则**：Claude 本身很聪明，只写它不知道的内容，不要解释它已经掌握的通用知识。
+## License
+
+MIT
