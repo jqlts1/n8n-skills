@@ -4,6 +4,55 @@
 
 ---
 
+## 在其他项目中使用
+
+### 方式一：Clone 直接使用
+
+```bash
+# 进入你的项目目录
+cd your-project
+
+# clone 到 .codex/skills
+git clone <this-repo-url> .codex/skills
+```
+
+Claude Code 会自动识别 `.codex/skills/` 下的所有 Skill，无需额外配置。
+
+### 方式二：Symlink（推荐多项目共用）
+
+先把仓库 clone 到一个中央位置，再在各项目里创建 symlink，更新一次全部同步：
+
+```bash
+# 1. clone 到本机中央位置（只需一次）
+git clone <this-repo-url> ~/.local/share/n8n-skills
+
+# 2. 在你的项目里批量创建 symlink
+SKILLS_REPO=~/.local/share/n8n-skills
+SKILLS_DIR=your-project/.codex/skills
+
+mkdir -p $SKILLS_DIR
+for skill in n8n-prototype n8n-node-configuration n8n-expression-syntax \
+             n8n-mcp-tools-expert n8n-workflow-patterns \
+             n8n-reference-workflow-research n8n-validation-expert \
+             n8n-node-pitfalls n8n-execution-testing; do
+  ln -s $SKILLS_REPO/$skill $SKILLS_DIR/$skill
+done
+
+# 3. 以后更新：只需在中央位置 pull，所有项目自动同步
+cd ~/.local/share/n8n-skills && git pull
+```
+
+### 方式三：Git Submodule（多人协作）
+
+```bash
+git submodule add <this-repo-url> .codex/skills
+git submodule update --init
+```
+
+团队成员 clone 后运行 `git submodule update --init` 即可。
+
+---
+
 ## 调用语法
 
 ```
