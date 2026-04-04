@@ -27,7 +27,7 @@ A collection of specialized Skills for building n8n workflows with Claude Code. 
 ### Option 1: Clone directly
 
 ```bash
-git clone https://github.com/jqlts1/n8n-skills .codex/skills
+git clone https://github.com/jqlts1/n8n-skills.git .codex/skills
 ```
 
 Claude Code automatically picks up all Skills in `.codex/skills/`. No extra config needed.
@@ -38,7 +38,7 @@ Clone once to a central location, then symlink into each project. One `git pull`
 
 ```bash
 # Clone once
-git clone https://github.com/jqlts1/n8n-skills ~/.local/share/n8n-skills
+git clone https://github.com/jqlts1/n8n-skills.git ~/.local/share/n8n-skills
 
 # Link into your project
 SKILLS_REPO=~/.local/share/n8n-skills
@@ -59,7 +59,7 @@ cd ~/.local/share/n8n-skills && git pull
 ### Option 3: Git Submodule (team projects)
 
 ```bash
-git submodule add https://github.com/jqlts1/n8n-skills .codex/skills
+git submodule add https://github.com/jqlts1/n8n-skills.git .codex/skills
 git submodule update --init
 ```
 
