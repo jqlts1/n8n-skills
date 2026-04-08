@@ -1,7 +1,7 @@
 ---
 name: n8n-workflow-patterns
 description: |
-  Use when designing a new n8n workflow, choosing a workflow structure, or deciding between webhook, API integration, database, AI agent, and scheduled task patterns.
+  Use when designing a new n8n workflow, choosing a workflow structure, or deciding between webhook, API integration, database, AI agent, scheduled task, and MCP server patterns.
 ---
 
 # n8n Workflow Patterns
@@ -12,7 +12,7 @@ If you know the business goal but not what the workflow should look like, start 
 
 ---
 
-## Five Core Patterns
+## Six Core Patterns
 
 ### 1. Webhook Processing
 
@@ -76,13 +76,27 @@ Best for:
 - Periodic health checks
 - Timed sync jobs
 
+### 6. MCP Server
+
+```text
+MCP Server Trigger → [Tool 1] / [Tool 2] / [Tool 3]
+```
+
+Best for:
+
+- Exposing n8n tools to AI clients (Claude, Cursor, etc.)
+- Internal API relay for AI agents
+- Multi-tool aggregation under one MCP endpoint
+
+> **Key**: MCP Trigger 不是线性流程，而是**工具注册器**。使用 `tool()` + Tool 版本节点，用 `$fromAi()` 传参。必须用 v2。详见 [mcp_server_pattern.md](mcp_server_pattern.md)
+
 ---
 
 ## General Checklist
 
 ### Planning phase
 
-- [ ] Identify which of the five patterns fits
+- [ ] Identify which of the six patterns fits
 - [ ] List the trigger, core processing, and output nodes
 - [ ] Decide how failures should be handled
 
@@ -140,3 +154,4 @@ No matter how well the middle processing is built, a workflow without a clear en
 - [database_operations.md](database_operations.md)
 - [ai_agent_workflow.md](ai_agent_workflow.md)
 - [scheduled_tasks.md](scheduled_tasks.md)
+- [mcp_server_pattern.md](mcp_server_pattern.md)
