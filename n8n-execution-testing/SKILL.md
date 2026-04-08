@@ -215,12 +215,75 @@ execute_workflow({ workflowId: "xxx", executionMode: "production" })
 - Credentialed nodes are involved and you don't want to send real messages, write to a database, or consume quota
 - Your main goal right now is to confirm the main path, branches, expressions, and field mappings
 - **原型阶段** — API 没配好、凭据没填，先验证流程逻辑
+- **AI 节点调试** — AI Agent / LLM Chain 等节点有凭据，每次真实调用消耗 token 费用，mock 可以省钱
 
 ### Go straight to real execution when
 
 - You need to verify a real webhook / chat / form entry point
 - You need to confirm behavior before going live
 - Mock tests have already passed and you're doing final end-to-end validation
+
+---
+
+## 如何让 Mock 数据更准确
+
+AI 生成的 pin data 是根据工作流逻辑**推测**的合理数据，不一定和真实接口返回一致。
+
+### Mock 能验证 vs 不能验证
+
+| Mock 能验证 | Mock 不能验证 |
+|------------|-------------|
+| ✅ 流程走向（分支、连接） | ❌ 真实字段名（也许叫 `inventory` 不叫 `stock`） |
+| ✅ 表达式引用是否正确 | ❌ 真实数据结构（也许嵌套在 `data.result` 里） |
+| ✅ 字段映射和赋值逻辑 | ❌ 认证、网络、限流等真实问题 |
+
+### 提高 Mock 准确度的方法
+
+#### 方法 1（推荐）：用户提供 API 文档或响应示例
+
+> ⚠️ **开始开发复杂工作流时，建议先把相关 API 接口文档或真实响应示例提供给 AI。**
+
+好处：
+- Pin data 按真实结构生成 — 字段名、嵌套层级、数据类型一次对
+- 表达式引用一次写对 — 不用猜是 `$json.stock` 还是 `$json.data.inventory`
+- Mock 和真实执行差距最小 — 联调时基本不用改
+- **省钱** — 尤其是 AI 节点（OpenAI/Anthropic），mock 跳过 LLM 调用，不消耗 token
+
+适用于所有需要 pin 的节点类型：
+- HTTP Request → 提供 API 响应示例
+- AI Agent / LLM Chain → 提供期望的 AI 输出结构
+- 第三方服务节点（Slack/Gmail/数据库等）→ 提供该服务返回的数据结构
+
+**示例：mock AI Agent 输出**
+
+```javascript
+// 用户提供了 AI 期望输出结构
+"AI分析Agent": [{ "json": {
+  "output": "根据分析，这个订单属于高优先级，建议立即处理。",
+  "confidence": 0.92,
+  "category": "urgent"
+}}]
+```
+
+这样后续的 If 判断、数据处理都能按真实结构跑，不用等 AI 真的返回。
+
+#### 方法 2：先真实执行一次，后续用历史 schema mock
+
+```text
+execute_workflow (真实执行一次，花一次钱)
+    ↓
+get_execution (拿到真实返回结构)
+    ↓
+之后 prepare_test_pin_data 就有历史 schema 了
+    ↓
+后续 test_workflow 基于真实结构生成 pin data（不再花钱）
+```
+
+`prepare_test_pin_data` 优先从历史执行提取 schema — 跑过一次就知道真实结构了。
+
+#### 方法 3：逐步替换
+
+先用猜测数据 mock 跑通逻辑 → 联调时发现字段不对 → 修正 pin data → 后续 mock 就准了。
 
 ---
 
