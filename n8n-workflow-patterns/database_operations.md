@@ -14,6 +14,48 @@ Trigger → [Query/Read] → [Transform] → [Write/Update] → [Verify/Log]
 
 ---
 
+## Data Table — 轻量级内置方案
+
+> ⚠️ **原型阶段优先用 Data Table**，不需要外部数据库就能实现数据持久化。
+
+### 什么时候用 Data Table vs 外部数据库
+
+| 场景 | Data Table | Postgres/MySQL |
+|------|-----------|---------------|
+| 原型阶段 / 快速验证 | ✅ 首选 | 过重 |
+| API 缓存 / 去重 | ✅ 推荐 | 没必要 |
+| 配置表 / 查找表 | ✅ 推荐 | 可以 |
+| 大数据量 (>50MB) | ❌ | ✅ 必须 |
+| 复杂查询 (JOIN/聚合) | ❌ | ✅ 必须 |
+| AI Agent 自主读写 | ✅ dataTableTool | 需自建 Tool |
+
+### Data Table 核心模式
+
+#### API 缓存
+```
+生成 Key → rowNotExists → 调用 API → upsert 保存
+                        → rowExists → get 获取缓存
+                                           ↓
+                                    Merge → 后续处理
+```
+
+#### 去重防重复
+```
+Webhook → rowExists → 跳过 (已处理)
+                    → 不存在 → 处理 → insert 标记
+```
+
+#### AI Agent + Data Table Tool
+```
+Chat Trigger → AI Agent
+                  ├── [ai_languageModel] → Chat Model
+                  └── [ai_tool] → Data Table Tool
+```
+
+详细配置和 SDK 代码见 [docs/配置类/datatable.md](/docs/配置类/datatable.md)
+
+---
+
 ## Core Components
 
 ### 1. Trigger

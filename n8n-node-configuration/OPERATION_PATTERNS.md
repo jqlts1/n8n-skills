@@ -283,6 +283,88 @@ trigger('n8n-nodes-base.scheduleTrigger', {
 
 ---
 
+## Data Table
+
+Data Table 是 n8n 内置的持久化存储，原型阶段推荐优先使用，无需外部数据库。
+
+### 两个版本
+
+| 版本 | 节点 ID | 用途 |
+|------|---------|------|
+| 普通节点 | `n8n-nodes-base.dataTable` | 工作流中直接操作 |
+| AI Tool | `n8n-nodes-base.dataTableTool` | 给 AI Agent 作为工具调用 |
+
+### Row 操作
+
+#### Insert
+
+```javascript
+node('n8n-nodes-base.dataTable', {
+  resource: 'row',
+  operation: 'insert',
+  dataTableId: { mode: 'id', value: 'your-table-id' },
+});
+```
+
+#### Get
+
+```javascript
+node('n8n-nodes-base.dataTable', {
+  resource: 'row',
+  operation: 'get',
+  dataTableId: { mode: 'id', value: 'your-table-id' },
+});
+```
+
+#### Upsert
+
+```javascript
+node('n8n-nodes-base.dataTable', {
+  resource: 'row',
+  operation: 'upsert',
+  dataTableId: { mode: 'id', value: 'your-table-id' },
+});
+```
+
+#### rowExists / rowNotExists（双输出端口）
+
+```javascript
+node('n8n-nodes-base.dataTable', {
+  resource: 'row',
+  operation: 'rowExists',  // 或 'rowNotExists'
+  dataTableId: { mode: 'id', value: 'your-table-id' },
+});
+```
+
+> ⚠️ 双输出端口类似 IF 节点，只传递输入项，不返回表数据。需要表数据时，后接 `get` 操作。
+
+### Table 管理操作
+
+```javascript
+// 创建表
+node('n8n-nodes-base.dataTable', {
+  resource: 'table',
+  operation: 'create',
+});
+
+// 列出所有表
+node('n8n-nodes-base.dataTable', {
+  resource: 'table',
+  operation: 'list',
+});
+```
+
+重点：
+
+- `dataTableId` 是必填，表需要先在 n8n 界面创建
+- `rowExists` / `rowNotExists` 是条件分支，不是数据查询
+- 给 AI Agent 用时换成 `n8n-nodes-base.dataTableTool`
+- 具体筛选条件、列映射等参数仍需回 `get_node_types` 确认
+
+详细说明见 [docs/配置类/datatable.md](/docs/配置类/datatable.md)
+
+---
+
 ## 什么时候回到类型定义
 
 下面这些情况都不要继续照着示例硬写：

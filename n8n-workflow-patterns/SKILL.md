@@ -50,6 +50,8 @@ Best for:
 - ETL pipelines
 - Periodic cleanup or reconciliation
 
+> **Tip**: 原型阶段或轻量需求优先用 **Data Table**（n8n 内置，无需外部数据库）。API 缓存、去重、配置表等场景特别适合。详见 [database_operations.md](database_operations.md)
+
 ### 4. AI Agent Workflow
 
 ```text
