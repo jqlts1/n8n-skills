@@ -203,6 +203,38 @@ A node that looks correct in isolation may still fail inside a workflow. Always 
 
 ---
 
+## Sticky Note Configuration
+
+Sticky Note (`n8n-nodes-base.stickyNote`) is a documentation node — it doesn't connect to any other node, just sits on the canvas.
+
+**SDK usage:**
+```javascript
+import { sticky } from '@n8n/workflow-sdk';
+
+const doc = sticky({
+  config: {
+    name: 'API 文档',
+    parameters: {
+      content: '## Title\n\nMarkdown content here',  // string, not object
+      width: 320,   // pixels, min 60
+      height: 400   // pixels, min 60
+    },
+    position: [40, 100]  // left-above the trigger node
+  }
+});
+
+export default workflow('id', 'name')
+  .add(doc)        // just .add(), no .to() — sticky notes don't connect
+  .add(trigger)
+  .to(node1);
+```
+
+**Position tip:** Place Sticky Notes at `[trigger.x - 200, trigger.y - 300]` to sit above-left of the flow. See `n8n-prototype/references/node-templates.md` for full position/size/color guide.
+
+**Known SDK warning:** `validate_workflow` may emit a warning about `parameters.content` type mismatch — this is cosmetic and doesn't affect the workflow.
+
+---
+
 ## Related Skills
 
 - **n8n-mcp-tools-expert** — explains when to use which MCP tool

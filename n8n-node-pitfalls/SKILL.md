@@ -210,6 +210,63 @@ return [{
 }];
 ```
 
+### HTTP requests inside Code Node
+
+> ⚠️ **沙箱里没有 `fetch`、`$helpers`、`$http`！** 唯一能用的就是 `this.helpers.httpRequest`（或 `require('https')` 兜底）。
+
+实测（2026-04-28，meiguo-n8n.zeabur.app）`runOnceForAllItems` 模式 JS 沙箱：
+
+| API | 是否可用 |
+|-----|---------|
+| `fetch` | ❌ undefined |
+| `$helpers` | ❌ undefined（仅 Expression 上下文有） |
+| `$http` | ❌ undefined |
+| `this.helpers.httpRequest` | ✅ |
+| `require('https')` / `require('http')` | ✅ |
+| `process` | ❌ undefined |
+
+```javascript
+// ✅ 正确写法（带 query string + 文本响应 + 重试）
+const res = await this.helpers.httpRequest({
+  method: 'GET',
+  url: 'https://api.example.com/endpoint',
+  qs: { foo: 'bar', baz: '123' },   // 自动 URL-encode 拼接
+  json: false,                       // false=返回原始字符串；true=自动解析 JSON
+  returnFullResponse: false,         // false=只要 body
+});
+```
+
+```javascript
+// ❌ 全部会报 "xxx is not defined"
+await fetch(url);
+await $helpers.httpRequest({...});
+await $http.request({...});
+```
+
+**重试模板**（响应 body 命中错误标记时自动重试）：
+
+```javascript
+const MAX_ATTEMPTS = 4;        // 1 初始 + 3 重试
+const RETRY_DELAY_MS = 1000;
+const ERROR_MARKER = 'curl出错';
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+let body = '', attempts = 0;
+for (let a = 0; a < MAX_ATTEMPTS; a++) {
+  attempts = a + 1;
+  try {
+    const res = await this.helpers.httpRequest({ method: 'GET', url, qs, json: false });
+    body = typeof res === 'string' ? res : JSON.stringify(res);
+  } catch (e) {
+    body = `[error] ${e && e.message ? e.message : String(e)}`;
+  }
+  if (!body.includes(ERROR_MARKER)) break;
+  if (a < MAX_ATTEMPTS - 1) await sleep(RETRY_DELAY_MS);
+}
+```
+
+**为什么是 `this.helpers` 而不是别的**：n8n 把 helpers 挂在节点的 `this` 上。Code 节点把用户代码包成 `async function() { ... }`（非箭头），所以 `this` 在 for/try 里都还是节点上下文。如果改成箭头函数包一层会丢绑定——尽量在顶层 await，别套 `(async () => { ... })()`。
+
 ---
 
 ## AI Agent Node

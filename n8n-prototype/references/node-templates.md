@@ -541,32 +541,160 @@ Chat Model 需要通过 `ai_languageModel` 端口连接到 AI Agent：
 ```
 
 ### Sticky Note 便签
+
+Sticky Note 是工作流里的文档面板，用来写 API 说明、凭证提示、流程架构等。好的 Sticky Note 让别人（或未来的自己）一眼看懂工作流。
+
+#### JSON 模板
 ```json
 {
   "id": "note_1",
   "name": "Sticky Note",
   "type": "n8n-nodes-base.stickyNote",
   "typeVersion": 1,
-  "position": [250, 100],
+  "position": [40, 100],
   "parameters": {
-    "content": "## 流程说明\n这是一个示例流程\n\n**主要步骤：**\n- 步骤1\n- 步骤2\n- 步骤3",
-    "height": 200,
-    "width": 300,
+    "content": "## API 文档\n\n**Webhook:** `POST /webhook/xxx`\n\n**Body:**\n```json\n{ \"input\": \"内容\" }\n```",
+    "height": 400,
+    "width": 320,
     "color": 1
   }
 }
 ```
 
-**Sticky Note 颜色值:**
-| 值 | 颜色 | 用途 |
-|----|------|------|
+#### SDK 写法
+```javascript
+import { sticky } from '@n8n/workflow-sdk';
+
+const doc = sticky({
+  config: {
+    name: 'API 文档',
+    parameters: {
+      content: '## 标题\n\n**字段:** 说明\n\n- 列表项1\n- 列表项2',
+      width: 320,
+      height: 400
+    },
+    position: [40, 100]
+  }
+});
+
+// 在 workflow 中添加（不参与连线，只是画布上的便签）
+export default workflow('id', 'name')
+  .add(doc)
+  .add(trigger)
+  .to(node1)
+  ...
+```
+
+#### 参数说明
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `content` | string | Markdown 内容，支持 `##` 标题、`**粗体**`、`` `代码` ``、代码块、列表等 |
+| `width` | number | 宽度（像素），最小 60，建议 260–400 |
+| `height` | number | 高度（像素），最小 60，根据内容调整 |
+| `color` | number | 背景颜色，见下表 |
+
+#### 颜色值
+
+| 值 | 颜色 | 推荐用途 |
+|----|------|----------|
 | 1 | 黄色 | 默认/一般说明 |
-| 2 | 蓝色 | 信息/提示 |
-| 3 | 粉色 | 重要/警告 |
-| 4 | 绿色 | 完成/确认 |
+| 2 | 蓝色 | API 文档/信息 |
+| 3 | 粉色 | 重要警告/注意事项 |
+| 4 | 绿色 | 完成确认/凭证配置 |
 | 5 | 白色 | 中性说明 |
-| 6 | 灰色 | 备注/次要 |
+| 6 | 灰色 | 备注/次要信息 |
 | 7 | 黑色 | 标题/强调 |
+
+#### 位置策略
+
+n8n 画布坐标系：X 向右增大，Y 向下增大。一个标准节点占约 200×100 像素。
+
+**定位原则：**
+1. **先确定工作流节点的范围** — 看所有节点的 position，找出最小 X/Y 和最大 X/Y
+2. **Sticky Note 放在流程上方或左侧** — 不遮挡节点和连线
+3. **多个 Sticky Note 按主题分区** — 文档类放左上，凭证提示放左下
+
+**常用位置公式：**
+
+```
+工作流起点 trigger 位置通常在 [240, 300] ~ [240, 400]
+
+┌─────────────────────┐
+│ Sticky Note         │  position: [trigger.x - 200, trigger.y - 300]
+│ [40, 100]           │  即 trigger 左上方
+│ width: 320          │
+│ height: 400         │
+└─────────────────────┘
+         ↓
+    [trigger] → [node1] → [node2] → ...
+    [240,400]   [480,400]  [720,400]
+```
+
+**按场景推荐：**
+
+| 场景 | 位置 | 尺寸 | 颜色 |
+|------|------|------|------|
+| API 文档（主说明） | trigger 左上 `[40, 100]` | 320 × 400~500 | 1(黄) 或 2(蓝) |
+| 凭证配置提示 | trigger 左下 `[40, trigger.y + 200]` | 300 × 200~280 | 4(绿) |
+| 流程架构图 | 所有节点上方居中 | 400~600 × 200 | 5(白) |
+| 警告/注意事项 | 相关节点附近 | 260 × 150 | 3(粉) |
+
+#### 尺寸估算
+
+内容行数 → 高度的经验公式：
+
+| 内容量 | 推荐 height |
+|--------|-------------|
+| 标题 + 3~5 行 | 200 |
+| 标题 + 8~12 行 | 350~400 |
+| 标题 + 代码块 + 列表 | 400~500 |
+| 完整 API 文档 | 500~600 |
+
+宽度一般固定 **300~400**，太宽会挤占节点空间。
+
+#### 内容模板示例
+
+**API 文档型：**
+```markdown
+## Workflow Name API
+
+**Webhook:** `POST /webhook/path`
+
+**Body:**
+\`\`\`json
+{ "input": "内容", "type": "可选参数" }
+\`\`\`
+
+**逻辑:**
+- 条件A → 分支1
+- 条件B → 分支2
+
+**集合:** DailyLog
+**时区:** UTC+8
+```
+
+**凭证配置型：**
+```markdown
+## 需手动配置凭证
+
+- HTTP节点: httpBearerAuth → Mem API
+- X请求: httpHeaderAuth
+- LLM: openAiApi (Newapi)
+
+> 创建后需通过 REST API 绑定凭证
+```
+
+**流程说明型：**
+```markdown
+## 流程架构
+
+Webhook → 搜索 → IF(存在?)
+  ├─ Yes: 读取 → 拼接 → 更新
+  └─ No:  准备 → 创建
+
+LLM 调用: 0次（纯 API 操作）
+```
 
 ### Execute Sub-workflow 调用子流程
 ```json

@@ -132,3 +132,50 @@ return {
   }
 };
 ```
+
+### JS 沙箱里发 HTTP 请求 ⚠️
+
+n8n Code 节点 JS 沙箱**没有** `fetch` / `$helpers` / `$http`，调它们直接报 `xxx is not defined`。
+唯一靠谱的方式是 `this.helpers.httpRequest`：
+
+```javascript
+// ✅ 正确：带 query 参数 + 原始字符串响应
+const res = await this.helpers.httpRequest({
+  method: 'GET',
+  url: 'https://api.example.com/path',
+  qs: { foo: 'bar' },           // 自动 URL-encode 拼接到 ?foo=bar
+  json: false,                   // false=原始字符串；true=自动解析 JSON
+  returnFullResponse: false,     // false=只要 body；true=拿 {body, headers, statusCode}
+});
+
+// POST + JSON body
+const res2 = await this.helpers.httpRequest({
+  method: 'POST',
+  url: 'https://api.example.com/submit',
+  body: { name: 'foo', count: 1 },
+  json: true,                    // body 自动 JSON.stringify，响应自动解析
+});
+```
+
+**重试模板**（响应 body 包含错误标记时重试 3 次，每次间隔 1 秒）：
+
+```javascript
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const MAX_ATTEMPTS = 4;
+const ERROR_MARKER = 'curl出错';
+
+let body = '';
+for (let a = 0; a < MAX_ATTEMPTS; a++) {
+  try {
+    const res = await this.helpers.httpRequest({ method: 'GET', url, qs, json: false });
+    body = typeof res === 'string' ? res : JSON.stringify(res);
+  } catch (e) {
+    body = `[error] ${e?.message ?? String(e)}`;
+  }
+  if (!body.includes(ERROR_MARKER)) break;
+  if (a < MAX_ATTEMPTS - 1) await sleep(1000);
+}
+```
+
+**禁忌速查**（沙箱内全部 `undefined`）：`fetch`、`$helpers`、`$http`、`process`、`window`、`document`。
+**兜底可用**：`require('https')`、`require('http')`、`require('crypto')`、`require('url')` 等内置模块。
